@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "target": "es2022",
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
+        "baseUrl": "."
+    },
+    "include": ["**/*.js"],
+    "exclude": ["node_modules"]
+}
