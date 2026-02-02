@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import {  compare, hash } from "bcryptjs";
 import { transporter } from "../config/nodemailer.js";
 
-
+// Client -> Email -> token,usedId in db -> Link with token and id.
 export const requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;
@@ -63,6 +63,7 @@ export const requestPasswordReset = async (req, res) => {
   }
 };
 
+// Client -> pass,token -> validate token+id -> grant change
 export const passwordChange = async (req,res) => {
   try{
       const { token, newPassword, userId} = req.body;
