@@ -229,16 +229,7 @@ export const sendEmailCode = async (req, res) => {
       from: process.env.EMAIL_FROM,
       to: email,
       subject: "Your Verification Code",
-      html: `
-            <div style="font-family: sans-serif; padding: 20px;">
-              <h2>Verify Your Email</h2>
-              <p>Use the code below to complete your verification.</p>
-              <div style="background: #f4f4f4; padding: 10px 20px; font-size: 24px; letter-spacing: 5px; font-weight: bold; display: inline-block; border-radius: 5px;">
-                ${code}
-              </div>
-              <p style="color: #666; font-size: 14px;">This code expires in 10 minutes.</p>
-            </div>
-          `,
+      code
     });
 
     return res

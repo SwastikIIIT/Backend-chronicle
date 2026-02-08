@@ -43,16 +43,7 @@ export const requestPasswordReset = async (req, res) => {
       from: process.env.EMAIL_FROM,
       to: email,
       subject: "Password Reset Request",
-      html: `
-        <div style="font-family: sans-serif; padding: 20px;">
-          <h1>Password Reset Request</h1>
-          <p>You requested a password reset for your account.</p>
-          <p>Click the link below to reset your password:</p>
-          <a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
-          <p style="margin-top: 20px;">This link will expire in 1 hour.</p>
-          <p style="color: #666; font-size: 12px;">If you didn't request this, please ignore this email.</p>
-        </div>
-      `,
+      code
     });
 
     return res.status(200).json({ message: "Reset link sent successfully" });
