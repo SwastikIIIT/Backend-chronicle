@@ -26,6 +26,7 @@
     "mongoose": "^9.1.5",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.13",
+    "pinata": "^2.5.4",
     "qrcode": "^1.5.4",
     "sharp": "^0.34.5",
     "speakeasy": "^2.0.0",

@@ -4,6 +4,7 @@ import { connectToMongo } from './database/mongodb.js';
 import authRoutes from './routes/authRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 import resetRoutes from './routes/resetRoutes.js'
+import web3Routes from './routes/web3Routes.js'
 import "dotenv/config";
 import { requireAuth } from './middlewares/auth.js';
 
@@ -27,6 +28,7 @@ app.get('/', async(req, res) => {
 app.use('/api/auth',authRoutes);
 app.use('/api/auth/user', requireAuth ,userRoutes);
 app.use('/api/auth/password', resetRoutes);
+app.use('/api/web3', requireAuth ,web3Routes);
 
 
 app.listen(port, () => {

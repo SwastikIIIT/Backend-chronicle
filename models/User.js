@@ -32,7 +32,7 @@ const UserSchema = new mongoose.Schema(
             github: { id: String },
         },
         image: { type: String, default: null},
-
+        cidHashes: { type: Array , select: false},
         lastLogin: { type:Date, default: null },
         passwordLastChanged: { type:Date, default: null },
         

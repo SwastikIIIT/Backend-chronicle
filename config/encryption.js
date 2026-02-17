@@ -1,10 +1,13 @@
 import crypto from 'crypto';
 
+// Advanced Encryption Standard - 256 - Cipher Block Chaining
 const ALGORITHM = 'aes-256-cbc';
 const ENCRYPTION_KEY = process.env.TWO_FACTOR_ENCRYPTION_KEY; 
+// Block Size
 const IV_LENGTH = 16;
 const keyBuffer = Buffer.from(ENCRYPTION_KEY,'hex');
-if(keyBuffer.length!=32)
+
+if(keyBuffer.length !== 32)
   throw new Error(`Invalid Encryption Key. Expected 32 bytes, got ${keyBuffer.length}`)
 
 export function encrypt(text){
@@ -12,6 +15,7 @@ export function encrypt(text){
     const cipher = crypto.createCipheriv(ALGORITHM, keyBuffer, iv);
     let encrypted = cipher.update(text);
     encrypted = Buffer.concat([encrypted, cipher.final()]);
+    // IV : CIPHERTEXT
     return iv.toString('hex') + ':' + encrypted.toString('hex');
 }
 
