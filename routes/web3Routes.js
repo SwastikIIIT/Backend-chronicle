@@ -1,5 +1,5 @@
 import { upload } from '../middlewares/upload.js';
-import { fetchFileInfo, uploadToIPFS, deleteFile} from '../controllers/web3Controller.js';
+import { fetchFileInfo, uploadToIPFS, deleteFile, getFromIPFS} from '../controllers/web3Controller.js';
 import express from 'express'
 const router = express.Router();
 
@@ -7,6 +7,7 @@ const router = express.Router();
 router.post('/ipfs', upload.single('doc') ,uploadToIPFS);
 router.get('/file-info', fetchFileInfo)
 router.delete('/delete-file', deleteFile)
+router.post('/get-file',getFromIPFS);
 
 
 export default router;

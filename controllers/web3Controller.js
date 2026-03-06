@@ -1,6 +1,4 @@
-import User from "../models/User.js";
 import { pinata } from "../config/pinata.js";
-import crypto from 'crypto';
 import Web3Event from "../models/Web3Event.js";
 
 export const fetchFileInfo = async(req,res)=>{
@@ -8,8 +6,19 @@ export const fetchFileInfo = async(req,res)=>{
         const userId=req.user.id;
         const data=await Web3Event.findOne({userId});
         if(!data) 
-            return res.status(204).json({error:'No file information found.'})
-        return res.status(200).json({files:data.fileData});
+            return res.status(204).json({error:'No file information found.'});
+        
+        const metaDatas=data.fileData.map((item)=>{
+            return {
+                type:item.type,
+                size:item.size,
+                name:item.name,
+                fileDBId:item._id,
+                authTag:item.authTag,
+                iv:item.iv
+            }}
+        );
+        return res.status(200).json({metaDatas});
     }
     catch(err)
     {
@@ -19,10 +28,10 @@ export const fetchFileInfo = async(req,res)=>{
 }
 
 export const uploadToIPFS = async(req,res)=>{
-    try
-    {
+    try{
         const file = req.file;
-     
+        const { iv, authTag } = req.body;
+
         if(!file)
             return res.status(404).json({ error: "No file provided."})
 
@@ -36,24 +45,23 @@ export const uploadToIPFS = async(req,res)=>{
             type: req.file.mimetype,
             size: req.file.size,
             name: req.file.originalname,
+            authTag: authTag,
+            iv: iv
         };
+
         const web3event= await Web3Event.findOneAndUpdate(
             {userId: req.user.id}, // find
             { $push:{fileData: fileMetadata}}, //update
             { new:true, upsert:true} //upsert
         );
-        console.log("Web3Event created:", web3event);
-        // const cidHash = crypto.createHash('sha256').update(response.cid).digest('hex');
-       
-        // await User.findByIdAndUpdate(req.user.id,{
-        //      $push: { cidHashes: cidHash } , 
-        // },{new: true}).select("+cidHashes");
+        const newFile=web3event.fileData[web3event.fileData.length-1];
+        console.log("Web3Event created:",newFile);
 
-        res.set('IPFS-CID', response.cid);
+        res.set('IPFS-CID',response.cid);
 
         console.log("Pinata Response:",response);
     
-        return res.status(200).json({ uploadedFile:fileMetadata,message:"Uploaded to IPFS successfully!"});
+        return res.status(200).json({uploadedFile:{...fileMetadata,fileDBId:newFile._id},message:"Uploaded to IPFS successfully!"});
     }
     catch(err)
     {
@@ -64,7 +72,7 @@ export const uploadToIPFS = async(req,res)=>{
 
 export const deleteFile =async(req,res)=>{
     try{
-        const {name,size,type,uploadedAt}=req.body;
+        const {name,size,type,fileDBId}=req.body;
 
         const data=await Web3Event.updateOne(
             {userId:req.user.id},
@@ -73,7 +81,7 @@ export const deleteFile =async(req,res)=>{
                     name: name,
                     size: size,
                     type: type,
-                    uploadedAt: new Date(uploadedAt)
+                    _id: fileDBId
                 }
             }},
             {new:true}
@@ -87,5 +95,31 @@ export const deleteFile =async(req,res)=>{
     {
         console.error(err);
         return res.status(500).json({ error: err?.message || "Failed to delete file information."});
+    }
+}
+
+export const getFromIPFS=async(req,res)=>{
+    try{
+        console.log("--- REACHED CONTROLLER ---"); 
+
+        const {cid}=req.body;
+        if(!cid) return res.status(500).json({message:'Cid hash is mandatory.'});
+
+        const file=await pinata.gateways.public.get(cid);
+        
+        console.log("File fetched from IPFS:",file);
+
+        const blob=file.data;
+        const arrayBuffer=await blob.arrayBuffer();
+        const buffer=Buffer.from(arrayBuffer);
+
+        res.setHeader('Content-Type', blob.type || 'application/octet-stream');
+        res.setHeader('Content-Length', buffer.length);
+
+        return res.status(200).send(buffer);
+    }
+    catch(err){
+        console.log("Error in getting file from ipfs:",err);
+        return res.status(500).json({error:err?.message || 'Get file from IPFS failed.'});
     }
 }
