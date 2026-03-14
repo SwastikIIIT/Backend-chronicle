@@ -8,8 +8,10 @@ import { client } from "../config/s3.js";
 import { processedBuffer } from "../config/sharp.js";
 import { compare, hash } from "bcryptjs";
 import { encrypt, decrypt } from "../config/encryption.js";
-import VerifyEmail from "../models/VerifyEmail.js";
 import { sendEmail } from "../config/nodemailer.js";
+// import { generateRegistrationOptions, verifyRegistrationResponse } from '@simplewebauthn/server';
+// import Passkey from "../models/PassKey.js";
+import { redis } from "../config/redis.js";
 
 export const getUserDetail = async (req, res) => {
   try {
@@ -195,34 +197,17 @@ export const disable2FA = async (req, res) => {
 export const sendEmailCode = async (req, res) => {
   try {
     const { email } = req.body;
+    const userID=req.user.id;
 
     if (!email) return res.status(400).json({ error: "Email is required" });
 
-    // Prevent Spam
-    const existingRequest = await VerifyEmail.findOne({
-      userID: req.user.id,
-      createdAt: { $gt: new Date(Date.now() - 60 * 1000) },
-    });
-
-    if (existingRequest)
-      return res
-        .status(429)
-        .json({ error: "Please wait 1 minute before requesting a new code." });
-
-    // Delete previous requests
-    await VerifyEmail.deleteMany({ userID: req.user.id });
-
     const code = crypto.randomInt(100000, 999999).toString();
     const tokenHash = await hash(code, 12);
-    const expiryTime = new Date(Date.now() + 10 * 60 * 1000);
 
-    const rec = await VerifyEmail.create({
-      userID: req.user.id,
-      email,
-      tokenHash,
-      status: "PENDING",
-      expiresAt: expiryTime,
-    });
+    const redisKey=`verify:email:${userID}`;
+    const data=JSON.stringify({ email, tokenHash });
+    
+    await redis.set(redisKey, data, { EX: 600 });
 
     await sendEmail({
       from: process.env.EMAIL_FROM,
@@ -231,11 +216,10 @@ export const sendEmailCode = async (req, res) => {
       code
     });
 
-    return res
-      .status(200)
-      .json({ message: "Verification code sent successfully." });
+    return res.status(200).json({ message: "Verification code sent successfully." });
   } catch (err) {
     console.error(err);
+    await redis.del(`limit:email:${req.user.id}:${req.body.email}`);
     return res
       .status(500)
       .json({ error: err?.message || "Failed to send verification code." });
@@ -245,22 +229,21 @@ export const sendEmailCode = async (req, res) => {
 export const verifyEmailCode = async (req, res) => {
   try {
     const { email, code } = req.body;
+    const userId = req.user.id;
     if (!email || !code)
-      return res
-        .status(400)
-        .json({ error: "Email and verification code are required" });
+      return res.status(400).json({ error: "Email and verification code are required" });
 
-    const record = await VerifyEmail.findOne({
-      userID: req.user.id,
-      email: email,
-    }).select("+tokenHash");
-    console.log("Record:", record);
+    const redisKey = `verify:email:${userId}`;
+    const record = await redisClient.get(redisKey);
+
     if (!record)
-      return res
-        .status(400)
-        .json({ error: "Invalid or expired verification code." });
+        return res.status(400).json({ error: "Invalid or expired verification code." });
 
-    const isValid = await compare(code, record?.tokenHash);
+    const { email: cachedEmail, tokenHash } = JSON.parse(record);
+    if (cachedEmail !== email) 
+      return res.status(400).json({ error: "Email mismatch." });
+    
+    const isValid = await compare(code, tokenHash);
 
     if (!isValid)
       return res.status(400).json({ error: "Invalid verification code." });
@@ -275,7 +258,11 @@ export const verifyEmailCode = async (req, res) => {
       return res.status(404).json({ error: "User not found." });
     }
 
-    await VerifyEmail.deleteOne({ _id: record._id });
+    // Remove all the locks
+    await Promise.all([
+      redisClient.del(redisKey),
+      redisClient.del(`limit:email:${userId}:${email}`)
+    ]);
 
     return res.status(200).json({ message: "Email verified successfully." });
   } catch (err) {
