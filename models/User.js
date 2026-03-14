@@ -21,6 +21,7 @@ const UserSchema = new mongoose.Schema(
             minlength:[6,"Password must be atleast 6 characters long"]
         },
         isVerified:{ type:Boolean, default:false },
+        isBiometricEnabled:{ type:Boolean, default:false },
         // embedded data or document
         twoFactor: {
             enabled: { type: Boolean, default: false },
