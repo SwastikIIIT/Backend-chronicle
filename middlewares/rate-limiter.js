@@ -10,7 +10,7 @@ export const rateLimiter=(seconds=60)=>{
         const isLocked=await redis.get(limitKey);
 
         if(isLocked){
-            const ttl = await redisClient.ttl(limitKey);
+            const ttl = await redis.ttl(limitKey);
             return res.status(429).json({error:`Please wait ${ttl} seconds before requesting a new code.`});
         }
         
