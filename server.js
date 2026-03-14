@@ -8,6 +8,7 @@ import resetRoutes from './routes/resetRoutes.js'
 import web3Routes from './routes/web3Routes.js'
 import "dotenv/config";
 import { requireAuth } from './middlewares/auth.js';
+import { initRedis } from './config/redis.js';
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -20,6 +21,7 @@ app.use((req, res, next) => {
 app.use(cors())
 app.use(express.json());
 await connectToMongo();
+await initRedis();
 
 
 app.get('/', async(req, res) => {
