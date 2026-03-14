@@ -7,8 +7,8 @@ import userRoutes from './routes/userRoutes.js'
 import resetRoutes from './routes/resetRoutes.js'
 import web3Routes from './routes/web3Routes.js'
 import "dotenv/config";
-import { requireAuth } from './middlewares/auth.js';
-import { initRedis } from './config/redis.js';
+import { requireAuth } from "./middlewares/auth.js";
+import { initRedis } from "./database/redis.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
