@@ -9,8 +9,8 @@ import { processedBuffer } from "../config/sharp.js";
 import { compare, hash } from "bcryptjs";
 import { encrypt, decrypt } from "../config/encryption.js";
 import { sendEmail } from "../config/nodemailer.js";
-// import { generateRegistrationOptions, verifyRegistrationResponse } from '@simplewebauthn/server';
-// import Passkey from "../models/PassKey.js";
+import { generateRegistrationOptions, verifyRegistrationResponse } from '@simplewebauthn/server';
+import Passkey from "../models/PassKey.js";
 import { redis } from "../database/redis.js";
 
 export const getUserDetail = async (req, res) => {
@@ -272,3 +272,103 @@ export const verifyEmailCode = async (req, res) => {
       .json({ error: err?.message || "Failed to verify email" });
   }
 };
+
+const rpName = "The Chronicle";
+const rpID=process.env.NODE_ENV === "production"? "auth-backend-fawn.vercel.app": "localhost";
+const origin=process.env.NODE_ENV === "production"? `https://${rpID}`: `http://${rpID}:3000`; // Frontend URL
+export const biometricSetup=async(req, res)=>{
+  try {
+    const { email } = req.body;
+    const userID=req.user.id;
+    if (!email) return res.status(400).json({error: "Email is required" });
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const userIDBuffer = new Uint8Array(Buffer.from(user._id.toString(), "utf8"),);
+    const options = await generateRegistrationOptions({
+      rpName,
+      rpID,
+      userID: userIDBuffer,
+      userName: email,
+      userDisplayName: user.username,
+      // Optional: Exclude existing biometrics so user doesn't register the same device twice
+      // excludeCredentials: user.passkeys.map(key => ({ id: key.credentialID, type: 'public-key' })),
+      authenticatorSelection: {
+        residentKey: "preferred",
+        userVerification: "preferred", // Require FaceID/Fingerprint (not just a USB tap)
+        authenticatorAttachment: "platform", // Forces device's internal biometrics (FaceID/TouchID)
+      },
+    });
+
+    await redis.set(`challenge:${userID}:${email}`,options.challenge,{Ex:600});
+    console.log("options:", options);
+
+    return res.status(200).json(options);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({error: err?.message || "Failed to setup biometric authentication"});
+  }
+};
+
+export const challengeVerify=async (req, res)=> {
+  try {
+    const { attestationResponse } = req.body;
+    const userID=req.user.id;
+    console.log("Attestation Response from Frontend:",attestationResponse);
+    const user = await User.findById(userID);
+    const challenge=await redis.get(`challenge:${userID}:${user.email}`);
+
+    if (!user || !challenge)
+      return res.status(400).json({error:"Session expired or challenge missing. Try again."});
+
+    console.log("User:", user);
+    let verification;
+    try {
+      verification = await verifyRegistrationResponse({
+        response: attestationResponse,
+        expectedChallenge: challenge,
+        expectedOrigin: origin,
+        expectedRPID: rpID,
+      });
+      console.log("VerificationResponse:", verification);
+    }
+    catch(error){
+      console.error("Verification failed:", error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    const { verified, registrationInfo } = verification;
+    if (verified && registrationInfo) {
+      const { credentialDeviceType } = registrationInfo;
+      const {
+        publicKey: credentialPublicKey,
+        id: credentialID,
+        counter,
+        transports,
+      } = registrationInfo.credential;
+
+      await Passkey.create({
+        userId: user._id,
+        credentialID: credentialID,
+        credentialPublicKey: Buffer.from(credentialPublicKey),
+        counter,
+        credentialDeviceType,
+        transports: transports || [],
+      });
+
+      await redis.del(`challenge:${userID}:${user.email}`);
+      user.isBiometricEnabled = true;
+      await user.save();
+      console.log(user);
+
+      return res.status(200).json({success:true,message:"Biometrics successfully configured!"});
+    } 
+    
+    return res.status(400).json({ error: "Biometric verification failed" });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json(err.message || "Challenge verification failed.");
+  }
+};
+
