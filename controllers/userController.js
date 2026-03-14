@@ -11,7 +11,7 @@ import { encrypt, decrypt } from "../config/encryption.js";
 import { sendEmail } from "../config/nodemailer.js";
 // import { generateRegistrationOptions, verifyRegistrationResponse } from '@simplewebauthn/server';
 // import Passkey from "../models/PassKey.js";
-import { redis } from "../config/redis.js";
+import { redis } from "../database/redis.js";
 
 export const getUserDetail = async (req, res) => {
   try {
