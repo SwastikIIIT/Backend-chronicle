@@ -16,8 +16,8 @@ router.get('/2fa/setup',setup2FA);
 router.post('/2fa/verify',verify2FA);
 router.post('/2fa/disable',disable2FA);
 
-router.post('/email/send', rateLimiter(300) ,sendEmailCode)
-router.post('/email/verify', rateLimiter(300), verifyEmailCode)
+router.post('/email/send', rateLimiter(120) ,sendEmailCode)
+router.post('/email/verify', rateLimiter(120), verifyEmailCode)
 
 router.post('/biometric/setup', biometricSetup)
 router.post('/biometric/challenge-verify', challengeVerify)

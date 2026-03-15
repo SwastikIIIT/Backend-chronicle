@@ -104,3 +104,61 @@ export const alertEmail=async({ from, to, subject, message })=>{
       throw error;
     }
 }
+
+export const sendPasswordEmail = async ({ from, to, subject, link }) => {
+  const sendSmtpEmail = new Brevo.SendSmtpEmail();
+
+  const htmlBody = `
+  <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+    
+    <div style="background-color: #1a1a1a; padding: 20px; text-align: center;">
+      <img src="https://d2v1qjwl1c2i7l.cloudfront.net/chronicle.png" alt="The Chronicle" style="width: 100px; filter: brightness(0) invert(1);" />
+    </div>
+
+    <div style="padding: 40px 20px; text-align: center; color: #333;">
+      
+      <div style="background-color: #fff3cd; color: #856404; display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 20px; border: 1px solid #ffeeba;">
+        🔑 Password Reset Request
+      </div>
+
+      <h2 style="margin-bottom: 20px; font-size: 24px;">Reset Your Password</h2>
+
+      <p style="color: #666; font-size: 16px; margin-bottom: 30px;">
+        We received a request to reset the password for your <b>The Chronicle</b> account.
+      </p>
+
+      <a href="${link}" 
+        style="display:inline-block;background:#007bff;color:white;text-decoration:none;padding:14px 28px;font-size:16px;font-weight:bold;border-radius:6px;">
+        Reset Password
+      </a>
+
+      <p style="margin-top: 30px; color: #999; font-size: 13px;">
+        This link will expire in <b>10 minutes</b>.
+      </p>
+
+      <p style="margin-top: 20px; color: #666; font-size: 14px; line-height: 1.5;">
+        If you did not request a password reset, you can safely ignore this email.
+      </p>
+
+    </div>
+
+    <div style="background-color: #f4f4f4; padding: 20px; text-align: center; color: #888; font-size: 12px;">
+      <p>&copy; ${new Date().getFullYear()} The Chronicle. All rights reserved.</p>
+    </div>
+
+  </div>
+  `;
+
+  sendSmtpEmail.subject = subject;
+  sendSmtpEmail.htmlContent = htmlBody;
+  sendSmtpEmail.sender = { name: "The Chronicle", email: from };
+  sendSmtpEmail.to = [{ email: to }];
+
+  try {
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    return data;
+  } catch (error) {
+    console.error("Brevo Error:", error);
+    throw error;
+  }
+};

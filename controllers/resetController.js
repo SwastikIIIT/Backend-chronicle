@@ -2,7 +2,8 @@ import PasswordReset from "../models/PasswordReset.js";
 import User from "../models/User.js";
 import crypto from "crypto";
 import { compare, hash } from "bcryptjs";
-import { sendEmail } from "../config/nodemailer.js";
+import { sendPasswordEmail } from "../config/nodemailer.js";
+import { redis } from "../database/redis.js";
 
 // Client -> Email -> token,usedId in db -> Link with token and id.
 export const requestPasswordReset = async (req, res) => {
@@ -14,78 +15,61 @@ export const requestPasswordReset = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ error: "User doesn't exist" });
 
-    // Prevent Spam
-    const existingRequest = await PasswordReset.findOne({
-      userID: user._id,
-      createdAt: { $gt: new Date(Date.now() - 5 * 1000) },
-    });
-
-    if (existingRequest)
-      return res.status(400).json({
-        error: "Please wait 5 minutes before requesting another link.",
-      });
-
-    // Delete earliers passwordReset logs
-    await PasswordReset.deleteMany({ userId: user._id });
-
     const resetToken = crypto.randomBytes(32).toString("hex");
     const tokenHash = await hash(resetToken, 10);
 
-    await PasswordReset.create({
-      userId: user._id,
-      tokenHash,
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
-    });
+    const redisKey=`verify:password:${email}`;
+    await redis.set(redisKey,JSON.stringify({email:email,token:tokenHash}),{EX:600});
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&id=${user._id}`;
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${email}`;
 
-    await sendEmail({
+    await sendPasswordEmail({
       from: process.env.EMAIL_FROM,
       to: email,
       subject: "Password Reset Request",
-      code
+      link:resetLink
     });
 
     return res.status(200).json({ message: "Reset link sent successfully" });
   } catch (err) {
     console.error("Error:", err);
-    return res
-      .status(500)
-      .json({ error: err?.message || "Failed to send reset link" });
+    await redis.del(`limit:${req.body.email}`);
+    return res.status(500).json({ error: err?.message || "Failed to send reset link" });
   }
 };
 
 // Client -> pass,token -> validate token+id -> grant change
 export const passwordChange = async (req, res) => {
   try {
-    const { token, newPassword, userId } = req.body;
+    const { token, newPassword, email } = req.body;
 
-    if (!userId || !token || !newPassword)
+    if (!email || !token || !newPassword)
       return res.status(400).json({ error: "Missing required fields" });
 
-    const resetRecord = await PasswordReset.findOne({ userId }).select(
-      "+tokenHash",
-    );
+    const passwordRequest=await redis.get(`verify:password:${email}`);
+    if (!passwordRequest)
+      return res.status(400).json({ error: "Invalid or expired password reset link" });
 
-    if (!resetRecord)
-      return res
-        .status(400)
-        .json({ error: "Invalid or expired password reset link" });
+    const {email:cachedEmail,token:cachedToken}=JSON.parse(passwordRequest);
+    if (cachedEmail !== email) 
+      return res.status(400).json({ error: "Invalid Request" });
 
-    const isValid = await compare(token, resetRecord.tokenHash);
+    const isValid = await compare(token, cachedToken);
 
     if (!isValid) return res.status(400).json({ error: "Invalid token" });
 
     const hashedPassword = await hash(newPassword, 10);
-    await User.findByIdAndUpdate(userId, { password: hashedPassword });
-
-    await PasswordReset.deleteOne({ _id: resetRecord._id });
+    await User.findOneAndUpdate({email:cachedEmail}, {password:hashedPassword});
+    
+    // Remove all the locks
+    await Promise.all([
+      redis.del(`verify:password:${email}`),
+      redis.del(`limit:email:${email}`)
+    ]);
 
     return res.json({ message: "Password updated successfully" });
   } catch (err) {
     console.error("Password Reset Error:", err);
-    return res
-      .status(500)
-      .json({ error: err?.message || "Failed to send reset link" });
+    return res.status(500).json({ error: err?.message || "Failed to send reset link" });
   }
 };

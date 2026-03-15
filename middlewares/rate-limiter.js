@@ -2,9 +2,9 @@ import { redis } from "../database/redis.js";
 
 export const rateLimiter=(seconds=60)=>{
     return async(req,res,next)=>{
-        const userID=req.user.id;
+        const {email}=req.body;
         
-        const limitKey=`limit:email:${userID}`;
+        const limitKey=`limit:email:${email}`;
         const isLocked=await redis.get(limitKey);
 
         if(isLocked){

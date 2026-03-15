@@ -204,7 +204,7 @@ export const sendEmailCode = async (req, res) => {
     const code = crypto.randomInt(100000, 999999).toString();
     const tokenHash = await hash(code, 12);
 
-    const redisKey=`verify:email:${userID}`;
+    const redisKey=`verify:token:${userID}`;
     const data=JSON.stringify({ email, tokenHash });
     
     await redis.set(redisKey, data, { EX: 600 });
@@ -231,8 +231,8 @@ export const verifyEmailCode = async (req, res) => {
     if (!email || !code)
       return res.status(400).json({ error: "Email and verification code are required" });
 
-    const redisKey = `verify:email:${userId}`;
-    const record = await redisClient.get(redisKey);
+    const redisKey = `verify:token:${userId}`;
+    const record = await redis.get(redisKey);
 
     if (!record)
         return res.status(400).json({ error: "Invalid or expired verification code." });
@@ -258,8 +258,8 @@ export const verifyEmailCode = async (req, res) => {
 
     // Remove all the locks
     await Promise.all([
-      redisClient.del(redisKey),
-      redisClient.del(`limit:email:${userId}`)
+      redis.del(redisKey),
+      redis.del(`limit:email:${email}`)
     ]);
 
     return res.status(200).json({ message: "Email verified successfully." });
