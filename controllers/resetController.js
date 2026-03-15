@@ -1,4 +1,3 @@
-import PasswordReset from "../models/PasswordReset.js";
 import User from "../models/User.js";
 import crypto from "crypto";
 import { compare, hash } from "bcryptjs";
