@@ -9,7 +9,7 @@ import web3Routes from './routes/web3Routes.js'
 import "dotenv/config";
 import { requireAuth } from "./middlewares/auth.js";
 import { initRedis } from "./database/redis.js";
-import { startSecurityCron } from 'security-check.js';
+import { startSecurityCron } from './security-check.js';
 
 const app = express();
 const port = process.env.PORT || 4000;
