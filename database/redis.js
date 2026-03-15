@@ -11,3 +11,14 @@ export async function initRedis(){
     await redis.connect();
     console.log("Redis connection established.")
 }
+
+export async function closeRedis(){
+    if (redis.isOpen) {
+        try {
+            await redis.quit(); 
+            console.log("Redis connection closed.");
+        } catch (error) {
+            console.log("Error closing Redis connection", error);
+        }
+    }
+}

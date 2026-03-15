@@ -1,6 +1,6 @@
 import express from 'express'
 import cors from 'cors'
-import { connectToMongo } from './database/mongodb.js';
+import { connectToMongo, disconnectFromMongo } from './database/mongodb.js';
 import authRoutes from './routes/authRoutes.js'
 import oauthRoutes from './routes/oauthRoutes.js'
 import userRoutes from './routes/userRoutes.js'
@@ -8,7 +8,7 @@ import resetRoutes from './routes/resetRoutes.js'
 import web3Routes from './routes/web3Routes.js'
 import "dotenv/config";
 import { requireAuth } from "./middlewares/auth.js";
-import { initRedis } from "./database/redis.js";
+import { closeRedis, initRedis } from "./database/redis.js";
 import { startSecurityCron } from './security-check.js';
 
 const app = express();
@@ -47,11 +47,15 @@ app.get('/health',(req,res)=>{
 
 // Graceful shutdown
 process.on("SIGINT", async () => {
+  await closeRedis();
+  await disconnectFromMongo();
   console.log("Shutting down gracefully...");
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
+  await closeRedis();
+  await disconnectFromMongo();
   console.log("Shutting down gracefully...");
   process.exit(0);
 });

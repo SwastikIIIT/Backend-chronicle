@@ -24,3 +24,15 @@ export const connectToMongo=async()=>{
         }
     }
 }
+
+export const disconnectFromMongo = async () => {
+    if (isConnect) {
+        try {
+            await mongoose.disconnect();
+            isConnect = false;
+            console.log('MongoDB connection closed.');
+        } catch (error) {
+            console.log("Error closing MongoDB connection", error);
+        }
+    }
+}
