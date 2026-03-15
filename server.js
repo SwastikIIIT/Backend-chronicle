@@ -41,7 +41,7 @@ app.listen(port, () => {
   console.log(`App running at port ${port}`)
 })
 
-app.get('/health',()=>{
+app.get('/health',(req,res)=>{
     res.status(200).send('Server Awake');
 })
 
