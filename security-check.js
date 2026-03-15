@@ -52,7 +52,7 @@ export async function startSecurityCron(){
                 { $match: { success: false, createdAt: { $gte: yesterday } } },
                 { $group: { _id: '$ipAddress', uniqueAccountsTargeted: { $addToSet: '$userId' } } },
                 { $project: { ipAddress: '$_id', targetCount: { $size: '$uniqueAccountsTargeted' } } },
-                { $match: { targetCount: { $gte: 10 } } } 
+                { $match: { targetCount: { $gte: 5 } } } 
             ]);
 
             if (suspiciousIPs.length > 0) {
