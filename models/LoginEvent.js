@@ -31,7 +31,7 @@ const LoginEventSchema=new mongoose.Schema(
  { timestamps: true }
 );
 
-LoginEventSchema.index({ userId:1, timestamp:-1 })
+LoginEventSchema.index({ userId:1, createdAt:-1 })
 
 const LoginEvent = mongoose.models?.LoginEvent || mongoose.model("LoginEvent", LoginEventSchema);
 
