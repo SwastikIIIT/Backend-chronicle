@@ -1,6 +1,6 @@
 import { passwordChange, requestPasswordReset } from '../controllers/resetController.js';
 import express from 'express'
-import { rateLimiter } from '../middlewares/password-limiter.js';
+import { rateLimiter } from '../middlewares/rateLimiter.js';
 
 const router = express.Router();
 
