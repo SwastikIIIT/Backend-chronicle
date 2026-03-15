@@ -1,0 +1,11 @@
+name: Ping Backend Server
+
+on:
+    schedule:
+        - cron: '*/5 * * * *'
+jobs:
+    ping-server:
+        runs-on: ubuntu-lates
+        steps:
+            - name: 'Ping Server'
+              run : curl https://backend-chronicle.onrender.com/health

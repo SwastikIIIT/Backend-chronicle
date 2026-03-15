@@ -38,3 +38,20 @@ app.use('/api/oauth',oauthRoutes);
 app.listen(port, () => {
   console.log(`App running at port ${port}`)
 })
+
+app.get('/health',()=>{
+    res.status(200).send('Server Awake');
+})
+
+// Graceful shutdown
+process.on("SIGINT", async () => {
+  console.log("Shutting down gracefully...");
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  console.log("Shutting down gracefully...");
+  await prisma.$disconnect();
+  process.exit(0);
+});
