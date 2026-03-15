@@ -219,10 +219,8 @@ export const sendEmailCode = async (req, res) => {
     return res.status(200).json({ message: "Verification code sent successfully." });
   } catch (err) {
     console.error(err);
-    await redis.del(`limit:email:${req.user.id}:${req.body.email}`);
-    return res
-      .status(500)
-      .json({ error: err?.message || "Failed to send verification code." });
+    await redis.del(`limit:email:${req.user.id}`);
+    return res.status(500).json({ error: err?.message || "Failed to send verification code." });
   }
 };
 
@@ -261,15 +259,13 @@ export const verifyEmailCode = async (req, res) => {
     // Remove all the locks
     await Promise.all([
       redisClient.del(redisKey),
-      redisClient.del(`limit:email:${userId}:${email}`)
+      redisClient.del(`limit:email:${userId}`)
     ]);
 
     return res.status(200).json({ message: "Email verified successfully." });
   } catch (err) {
     console.error(err);
-    return res
-      .status(500)
-      .json({ error: err?.message || "Failed to verify email" });
+    return res.status(500).json({ error: err?.message || "Failed to verify email" });
   }
 };
 
