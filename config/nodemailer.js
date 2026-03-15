@@ -54,3 +54,53 @@ export const sendEmail = async ({ from, to, subject, code }) => {
     throw error;
   }
 };
+
+export const alertEmail=async({ from, to, subject, message })=>{
+    const sendSmtpEmail = new Brevo.SendSmtpEmail();
+
+    const htmlBody = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+      
+      <div style="background-color: #1a1a1a; padding: 20px; text-align: center;">
+        <img src="https://d2v1qjwl1c2i7l.cloudfront.net/chronicle.png" alt="The Chronicle" style="width: 100px; filter: brightness(0) invert(1);" />
+      </div>
+
+      <div style="padding: 40px 20px; text-align: center; color: #333;">
+        
+        <div style="background-color: #fff3cd; color: #856404; display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 20px; border: 1px solid #ffeeba;">
+          ⚠️ Security Notice
+        </div>
+        
+        <h2 style="margin-bottom: 20px; font-size: 24px; color: #d9534f;">Account Security Alert</h2>
+        
+        <p style="color: #444; font-size: 16px; margin-bottom: 30px; line-height: 1.6; text-align: left; background: #fdf2f2; padding: 20px; border-left: 4px solid #d9534f; border-radius: 4px;">
+          ${message}
+        </p>
+
+        <p style="margin-top: 30px; color: #666; font-size: 14px; line-height: 1.5;">
+          If you authorized this action, you can safely ignore this email.<br><br>
+          <b>If you did not initiate this action</b> or believe your account has been compromised, please <b>change your password immediately</b> and contact our support team.
+        </p>
+
+      </div>
+
+      <div style="background-color: #f4f4f4; padding: 20px; text-align: center; color: #888; font-size: 12px;">
+        <p>&copy; ${new Date().getFullYear()} The Chronicle. All rights reserved.</p>
+      </div>
+
+    </div>
+    `;
+
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.htmlContent = htmlBody;
+    sendSmtpEmail.sender = { name: "The Chronicle", email: from };
+    sendSmtpEmail.to = [{ email: to }];
+
+    try {
+      const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+      return data;
+    } catch (error) {
+      console.error('Brevo Error:', error);
+      throw error;
+    }
+}

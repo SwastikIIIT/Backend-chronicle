@@ -9,6 +9,7 @@ import web3Routes from './routes/web3Routes.js'
 import "dotenv/config";
 import { requireAuth } from "./middlewares/auth.js";
 import { initRedis } from "./database/redis.js";
+import { startSecurityCron } from 'security-check.js';
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -22,6 +23,8 @@ app.use(cors())
 app.use(express.json());
 await connectToMongo();
 await initRedis();
+// Run silently in background.
+startSecurityCron();
 
 
 app.get('/', async(req, res) => {
@@ -33,7 +36,6 @@ app.use('/api/auth/user', requireAuth ,userRoutes);
 app.use('/api/auth/password', resetRoutes);
 app.use('/api/web3', requireAuth ,web3Routes);
 app.use('/api/oauth',oauthRoutes);
-
 
 app.listen(port, () => {
   console.log(`App running at port ${port}`)
