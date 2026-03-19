@@ -29,8 +29,12 @@ const UserSchema = new mongoose.Schema(
             recoveryCodes: { type: Array, select: false },
         },
         providers: {
-            google: { id: String ,default:null},
-            github: { id: String ,default:null},
+            google: { 
+                id: { type: String, default: null } 
+            },
+            github: { 
+                id: { type: String, default: null } 
+            }
         },
         image: { type: String, default: null},
         cidHashes: { type: Array , select: false},

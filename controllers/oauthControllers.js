@@ -8,7 +8,7 @@ export const googleOAuthLogin=async(req,res)=>{
     //    const userAgent=req.headers['user-agent'];
 
        if(!email || !providerId) 
-            return res.status(400).json({ error: "Missing Google profile data" });
+            return res.status(400).json({ error: "Missing Oauth profile data" });
 
        const ipAddress=await getIp(req);
        let user=await User.findOne({ email }).select("+twoFactor.enabled");
@@ -25,12 +25,12 @@ export const googleOAuthLogin=async(req,res)=>{
        else{
          // Merge the account
          if (!user.providers?.[provider]?.id) {
-                user.providers = {
-                    ...user.providers,
-                    [provider]: { id: providerId }
-                };
+                if (req.body.provider === 'github') user.providers.github = { id: providerId };
+                else if (req.body.provider === 'google') user.providers.google = { id: providerId };
                 user.isVerified = true; 
             }
+            user.image=image;
+            user.name=name;
             user.lastLogin = new Date();
             await user.save();
        }
