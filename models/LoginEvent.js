@@ -15,7 +15,7 @@ const LoginEventSchema=new mongoose.Schema(
         default: null
     },
     location:{
-        city: String,
+        region: String,
         country: String,
         timezone: String
     },
