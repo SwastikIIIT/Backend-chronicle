@@ -70,8 +70,13 @@ app.get('/test',(req,res)=>{
   const realIp=req.headers['x-real-ip'];
   console.log("Real Ip:",realIp);
   if(realIp) obj.realIp=realIp;
+
+  const clientIp=req.headers['x-chronicle-client-ip'];
+  console.log("Client Ip:",clientIp);
+
   console.log("Req Ip:",req.ip);
   console.log("Req remote Ip:",req.connection.remoteAddress);
+  
   return req.ip;
 
 })
