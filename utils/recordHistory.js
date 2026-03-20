@@ -28,7 +28,7 @@ export const recordLoginEvent = async ({
     //  Location info via IP address
     const geo = geoip.lookup(ipAddress);
     const country = geo?.country || "Unknown";
-    const city = geo?.city || "Unknown";
+    const region = geo?.region || "Unknown";
     const timezone = geo?.timezone || "UTC";
     
     console.log("Device Info:", deviceInfo);
@@ -38,13 +38,13 @@ export const recordLoginEvent = async ({
       userId,
       success,
       provider,
-      location: { country, city, timezone },
+      location: { country, region, timezone },
       device: deviceInfo,
       ipAddress,
       reason,
     });
 
-    console.log(`Login recorded: ${deviceInfo} from ${city}, ${country}`);
+    console.log(`Login recorded: ${deviceInfo} from ${region}, ${country}`);
   } catch (err) {
     console.error("Login event recording failed:", err);
   }
