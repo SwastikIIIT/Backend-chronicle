@@ -51,20 +51,25 @@ app.get('/test',(req,res)=>{
   // console.log("Request:",req);
 
   const cfIP=req.headers['cf-connecting-ip'];
+  const obj={
+    cfIp:'',
+    realIp:'',
+    farwardedFor:''
+  }
   console.log("CfIp:",cfIP);
-  if(cfIP) return cfIP;
+  if(cfIP) obj.cfIp=cfIP;
 
   const farwardedFor=req.headers['x-forwarded-for'];
   console.log("X-Farwared-for:",farwardedFor);
   if(farwardedFor)
   {
     const ips=farwardedFor.split(',').map(ip=>ip.trim());
-    return ips[0];
+    obj.farwardedFor=ips[0];
   }
 
   const realIp=req.headers['x-real-ip'];
   console.log("Real Ip:",realIp);
-  if(realIp) return realIp;
+  if(realIp) obj.realIp=realIp;
   console.log("Req Ip:",req.ip);
   console.log("Req remote Ip:",req.connection.remoteAddress);
   return req.ip;
