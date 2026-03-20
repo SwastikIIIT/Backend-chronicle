@@ -19,7 +19,12 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors())
+app.use(cors({
+    origin: ['http://localhost:3000', 'https://auth-backend-fawn.vercel.app','https://auth-backend-lily.vercel.app'], 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type','Cookie','x-chronicle-ua', 'x-chronicle-client-ip'] 
+  }
+))
 app.use(express.json());
 await connectToMongo();
 await initRedis();
@@ -48,7 +53,6 @@ app.get('/health',(req,res)=>{
 
 app.get('/test',(req,res)=>{
   console.log('Req headers:',req.headers);
-  // console.log("Request:",req);
 
   const cfIP=req.headers['cf-connecting-ip'];
   const obj={
@@ -77,8 +81,7 @@ app.get('/test',(req,res)=>{
   console.log("Req Ip:",req.ip);
   console.log("Req remote Ip:",req.connection.remoteAddress);
   
-  return req.ip;
-
+  res.json("Testing Ips");
 })
 
 // Graceful shutdown

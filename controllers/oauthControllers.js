@@ -5,12 +5,12 @@ import { recordLoginEvent } from "../utils/recordHistory.js";
 export const googleOAuthLogin=async(req,res)=>{
     try{
        const { email, name, image, providerId, provider } = req.body;
-    //    const userAgent=req.headers['user-agent'];
+       const userAgent=req.headers['x-chronicle-ua'];
+       const ipAddress=req.headers['x-chronicle-client-ip']
 
        if(!email || !providerId) 
             return res.status(400).json({ error: "Missing Oauth profile data" });
 
-       const ipAddress=await getIp(req);
        let user=await User.findOne({ email }).select("+twoFactor.enabled");
        if(!user){
          user=await User.create({
@@ -39,8 +39,9 @@ export const googleOAuthLogin=async(req,res)=>{
             headers: req.headers,
             userId: user._id,
             success: true,
-            provider: provider, // "google"
+            provider: provider, // "google","github"
             reason: "LOGIN_SUCCESS",
+            userAgent,
             ipAddress,
         });
       
@@ -55,6 +56,7 @@ export const googleOAuthLogin=async(req,res)=>{
     catch(err)
     {
         console.error("Google OAuth error:", err);
+        
         return res.status(500).json({error:err.message || "Google authentication failed"});
     }
 }
