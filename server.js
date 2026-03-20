@@ -46,6 +46,31 @@ app.get('/health',(req,res)=>{
     res.status(200).send('Server Awake');
 })
 
+app.get('/test',(req,res)=>{
+  console.log('Req headers:',req.headers);
+  // console.log("Request:",req);
+
+  const cfIP=req.headers['cf-connecting-ip'];
+  console.log("CfIp:",cfIP);
+  if(cfIP) return cfIP;
+
+  const farwardedFor=req.headers['x-forwarded-for'];
+  console.log("X-Farwared-for:",farwardedFor);
+  if(farwardedFor)
+  {
+    const ips=farwardedFor.split(',').map(ip=>ip.trim());
+    return ips[0];
+  }
+
+  const realIp=req.headers['x-real-ip'];
+  console.log("Real Ip:",realIp);
+  if(realIp) return realIp;
+  console.log("Req Ip:",req.ip);
+  console.log("Req remote Ip:",req.connection.remoteAddress);
+  return req.ip;
+
+})
+
 // Graceful shutdown
 process.on("SIGINT", async () => {
   await closeRedis();
