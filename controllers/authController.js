@@ -2,14 +2,14 @@ import { compare, hash } from "bcryptjs";
 import User from "../models/User.js";
 import { recordLoginEvent } from "../utils/recordHistory.js";
 import {generateAuthenticationOptions,verifyAuthenticationResponse} from "@simplewebauthn/server";
-import { getIp } from "../utils/getIp.js";
 import Passkey from "../models/PassKey.js";
 import { redis } from "../database/redis.js";
 
 export const login = async(req,res)=>{
     try{
         const { email, password, twoFactorToken } = req.body;
-        const userAgent=req.headers['user-agent'];
+        const userAgent=req.headers['x-chronicle-ua'];
+        const ipAddress=req.headers['x-chronicle-client-ip']
 
         if(!email || !password)
             return res.status(400).json({message:'Missing Credentials'});
@@ -19,7 +19,6 @@ export const login = async(req,res)=>{
             return res.status(401).json({message:"User not signedup in the application"});
 
         const isMatch = await compare(password,user.password);
-        const ipAddress=await getIp(req);
         
         // Password wrong
         if(!isMatch)

@@ -8,32 +8,31 @@ export const recordLoginEvent = async ({
   success,
   provider,
   ipAddress = null,
-  userAgent = "Unknown", 
+  userAgent = "Unknown",
   reason = null,
 }) => {
   try {
+    // User Agent se device and browser info
     const parser = new UAParser(userAgent);
     const result = parser.getResult();
-    
+
     const browserName = result.browser.name || "Unknown Browser";
     const osName = result.os.name || "Unknown OS";
-    let deviceType = result.device.type;
-    
-    if (!deviceType) {
-        if(['Windows', 'Mac OS', 'Linux'].includes(osName)) deviceType = 'Desktop';
-        else  deviceType = 'Unknown Device';
-    }
+    let deviceType = result.device.type || "desktop";
+    const cleanDevice = deviceType.charAt(0).toUpperCase() + deviceType.slice(1).toLowerCase();
 
-    const deviceVendor = result.device.vendor ? `, ${result.device.vendor}` : "";
+    const deviceVendor = result.device.vendor ? ` ${result.device.vendor}` : "";
     const deviceModel = result.device.model ? ` ${result.device.model}` : "";
 
-    const deviceInfo = `${browserName} on ${osName} (${deviceType}${deviceVendor}${deviceModel})`;
+    const deviceInfo = `${browserName} on ${osName} (${cleanDevice}${deviceVendor}${deviceModel})`;
+    //  Location info via IP address
     const geo = geoip.lookup(ipAddress);
-    
-
-    const country = headers["cf-ipcountry"] || geo?.country || "Unknown";
-    const city = headers["cf-city"] || geo?.city || "Unknown";
+    const country = geo?.country || "Unknown";
+    const city = geo?.city || "Unknown";
     const timezone = geo?.timezone || "UTC";
+    
+    console.log("Device Info:", deviceInfo);
+    console.log("Location details:", geo);
 
     await LoginEvent.create({
       userId,
@@ -42,15 +41,11 @@ export const recordLoginEvent = async ({
       location: { country, city, timezone },
       device: deviceInfo,
       ipAddress,
-      userAgent,
       reason,
     });
 
     console.log(`Login recorded: ${deviceInfo} from ${city}, ${country}`);
-
   } catch (err) {
     console.error("Login event recording failed:", err);
-    // Don't throw error here, otherwise login might fail just because logging failed
-    // throw new Error(err?.message || "Login event recording failed");
   }
 };

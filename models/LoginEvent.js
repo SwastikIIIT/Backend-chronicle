@@ -10,7 +10,6 @@ const LoginEventSchema=new mongoose.Schema(
     },
     success: { type: Boolean, required: true },
     ipAddress: String, // default==undefined
-    userAgent: String,
     device:{
         type: String,
         default: null
