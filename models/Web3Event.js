@@ -10,8 +10,10 @@ const Web3EventSchema = new mongoose.Schema(
         },
         fileData:[
             {
+                // Encryption Data
                 authTag:{type:String, required:true},
                 iv:{type:String, required:true},
+                // File MetaData
                 type:{type:String, required:true},
                 size:{type:Number, required:true},
                 name:{type:String,required:true},
