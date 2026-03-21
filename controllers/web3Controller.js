@@ -15,9 +15,11 @@ export const fetchFileInfo = async(req,res)=>{
                 name:item.name,
                 fileDBId:item._id,
                 authTag:item.authTag,
-                iv:item.iv
+                iv:item.iv,
+                uploadedAt:item.uploadedAt
             }}
         );
+        // console.log("MetaDatas:",metaDatas);
         return res.status(200).json({metaDatas});
     }
     catch(err)
