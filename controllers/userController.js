@@ -49,7 +49,7 @@ export const uploadAvatar = async (req, res) => {
       return res.status(400).json({ error: "No image file uploaded." });
 
     const fileExt = file?.mimetype.split("/")[1];
-    const key = `avatars/${req.user.id}-${Date.now()}.${fileExt}`;
+    const key = `${req.user.id}-${Date.now()}.${fileExt}`;
     const buffer = await processedBuffer(fileExt, file?.buffer);
 
     const command = new PutObjectCommand({
