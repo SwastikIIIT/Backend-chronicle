@@ -79,12 +79,12 @@ export const saveAvatar = async (req, res) => {
     const userId = req.user.id;
 
     await User.findByIdAndUpdate(userId, {
-      image: `${process.env.CLOUDFRONT_DOMAIN}/${key.split("/")[1]}`,
+      image: `${process.env.CLOUDFRONT_DOMAIN}/${key}`,
     });
 
     return res
       .status(200)
-      .json({ url: `${process.env.CLOUDFRONT_DOMAIN}/${key.split("/")[1]}` });
+      .json({ url: `${process.env.CLOUDFRONT_DOMAIN}/${key}` });
   } catch (err) {
     console.error(err);
     return res
