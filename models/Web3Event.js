@@ -10,6 +10,9 @@ const Web3EventSchema = new mongoose.Schema(
         },
         fileData:[
             {
+                // Shares
+                share1: {type:String, required:true},  // ipfs-cid
+                share2: {type:String, required:true},  // encrypted using BACKEND_SECRET
                 // Encryption Data
                 authTag:{type:String, required:true},
                 iv:{type:String, required:true},

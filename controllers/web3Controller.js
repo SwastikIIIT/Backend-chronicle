@@ -1,5 +1,6 @@
 import { pinata } from "../config/pinata.js";
 import Web3Event from "../models/Web3Event.js";
+import CryptoJS from "crypto-js";
 
 export const fetchFileInfo = async(req,res)=>{
     try{
@@ -9,14 +10,22 @@ export const fetchFileInfo = async(req,res)=>{
             return res.status(204).json({error:'No file information found.'});
         
         const metaDatas=data.fileData.map((item)=>{
+            let decryptedShare2="";
+            if (item.share2) {
+                const bytes = CryptoJS.AES.decrypt(item.share2, process.env.BACKEND_SECRET);
+                decryptedShare2 = bytes.toString(CryptoJS.enc.Utf8);
+            }
+    
             return {
-                type:item.type,
-                size:item.size,
-                name:item.name,
-                fileDBId:item._id,
-                authTag:item.authTag,
-                iv:item.iv,
-                uploadedAt:item.uploadedAt
+                fileDBId: item._id,
+                share1: item.share1, // CID HASH
+                share2: decryptedShare2, // DECRYPTED
+                type: item.type,
+                size: item.size,
+                name: item.name,
+                authTag: item.authTag,
+                iv: item.iv,
+                uploadedAt: item.uploadedAt
             }}
         );
         // console.log("MetaDatas:",metaDatas);
@@ -32,7 +41,7 @@ export const fetchFileInfo = async(req,res)=>{
 export const uploadToIPFS = async(req,res)=>{
     try{
         const file = req.file;
-        const { iv, authTag } = req.body;
+        const { iv, authTag, share1, share2 } = req.body;
 
         if(!file)
             return res.status(404).json({ error: "No file provided."})
@@ -42,13 +51,18 @@ export const uploadToIPFS = async(req,res)=>{
             req.file.originalname ,
             { type: req.file.mimetype}
         );
+        // Encrypt share2 using BACKEND_SECRET
+        const encryptedShare2 = CryptoJS.AES.encrypt(share2,process.env.BACKEND_SECRET).toString();        
+
         const response = await pinata.upload.public.file(fileObject);
         const fileMetadata={
+            share1: share1,
+            share2: encryptedShare2,
             type: req.file.mimetype,
             size: req.file.size,
             name: req.file.originalname,
             authTag: authTag,
-            iv: iv
+            iv: iv,
         };
 
         const web3event= await Web3Event.findOneAndUpdate(
@@ -63,7 +77,11 @@ export const uploadToIPFS = async(req,res)=>{
 
         console.log("Pinata Response:",response);
     
-        return res.status(200).json({uploadedFile:{...fileMetadata,fileDBId:newFile._id},message:"Uploaded to IPFS successfully!"});
+        return res.status(200).json({uploadedFile:{
+            ...fileMetadata,
+            share2: share2,
+            fileDBId:newFile._id},
+            message:"Uploaded to IPFS successfully!"});
     }
     catch(err)
     {
